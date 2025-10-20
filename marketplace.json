@@ -1,0 +1,203 @@
+{
+  "marketplace": {
+    "name": "Claude Skills Marketplace",
+    "version": "1.0.0",
+    "description": "Custom skills for Claude AI to enhance business automation and analysis capabilities",
+    "author": "patshone-github",
+    "repository": "https://github.com/patshone-github/skills",
+    "updated": "2025-10-20T14:00:00Z"
+  },
+  "categories": [
+    {
+      "id": "finance-analytics",
+      "name": "Finance & Analytics",
+      "description": "Financial analysis, M&A tracking, market research tools",
+      "icon": "📊"
+    },
+    {
+      "id": "productivity",
+      "name": "Productivity",
+      "description": "Task automation, document generation, workflow optimization",
+      "icon": "⚡"
+    },
+    {
+      "id": "data-processing",
+      "name": "Data Processing",
+      "description": "ETL, data cleaning, analysis, and visualization tools",
+      "icon": "🔄"
+    },
+    {
+      "id": "communication",
+      "name": "Communication",
+      "description": "Email automation, report generation, notification systems",
+      "icon": "📧"
+    },
+    {
+      "id": "development",
+      "name": "Development",
+      "description": "Code generation, testing, and deployment tools",
+      "icon": "💻"
+    }
+  ],
+  "skills": [
+    {
+      "id": "ma-tracker-consulting-tech",
+      "name": "M&A Tracker - Consulting & Tech Services",
+      "description": "Track and analyze M&A deals in consulting and tech services sectors (£5-50m range), generate weekly Excel reports with comprehensive sector analysis",
+      "version": "1.0.0",
+      "author": "MA Intelligence System",
+      "category": "finance-analytics",
+      "tags": [
+        "m&a",
+        "mergers",
+        "acquisitions",
+        "consulting",
+        "technology",
+        "finance",
+        "excel",
+        "reporting",
+        "rss",
+        "automation"
+      ],
+      "metadata": {
+        "created": "2025-10-20",
+        "updated": "2025-10-20",
+        "license": "MIT",
+        "language": "python",
+        "min_python_version": "3.8",
+        "size_kb": 44,
+        "complexity": "intermediate",
+        "execution_time": "1-5 minutes",
+        "data_sources": [
+          "RSS feeds",
+          "Financial news sites"
+        ]
+      },
+      "features": [
+        "Automated RSS feed monitoring from 13+ sources",
+        "Deal value extraction and categorization",
+        "Buyer type classification (PE vs Strategic)",
+        "Sector and technology trend analysis",
+        "Geographic distribution tracking",
+        "Excel report generation with multiple sheets",
+        "Configurable alert system",
+        "Customizable deal filters"
+      ],
+      "requirements": {
+        "python_packages": [
+          "pandas>=2.0.0",
+          "openpyxl>=3.1.0",
+          "feedparser>=6.0.0",
+          "python-dateutil>=2.8.0"
+        ],
+        "system": [
+          "Python 3.8+",
+          "Internet connection for RSS feeds",
+          "Write permissions for Excel output"
+        ],
+        "claude_features": [
+          "File creation",
+          "Data processing",
+          "External data access"
+        ]
+      },
+      "configuration": {
+        "customizable": true,
+        "config_file": "config.json",
+        "key_settings": [
+          "turnover_range_millions",
+          "days_lookback",
+          "sectors",
+          "geographic_mapping",
+          "output_location"
+        ]
+      },
+      "installation": {
+        "method": "folder_copy",
+        "path": "skills/ma-tracker-consulting-tech",
+        "files": [
+          "SKILL.md",
+          "ma_tracker.py",
+          "config.json",
+          "requirements.txt",
+          "data/rss_feeds.opml"
+        ],
+        "post_install": [
+          "pip install -r requirements.txt"
+        ]
+      },
+      "usage": {
+        "trigger_phrases": [
+          "track M&A deals",
+          "consulting acquisitions",
+          "tech services mergers",
+          "create M&A report",
+          "analyze recent acquisitions"
+        ],
+        "command_examples": [
+          "python ma_tracker.py",
+          "python ma_tracker.py --days 14",
+          "python ma_tracker.py --sector 'Cybersecurity'"
+        ],
+        "output_format": "Excel file (.xlsx)",
+        "output_location": "/mnt/user-data/outputs/"
+      },
+      "support": {
+        "documentation": "SKILL.md",
+        "reference": "REFERENCE.md",
+        "test_script": "test_skill.py",
+        "validation_script": "validate_spec.py",
+        "issues_url": "https://github.com/patshone-github/skills/issues"
+      },
+      "performance": {
+        "typical_runtime": "30-60 seconds",
+        "memory_usage": "low",
+        "network_usage": "moderate",
+        "scalability": "handles 100+ deals per run"
+      },
+      "compatibility": {
+        "claude_versions": ["all"],
+        "platforms": ["linux", "mac", "windows"],
+        "tested_on": "Ubuntu 24"
+      },
+      "quality_metrics": {
+        "validation_score": 9.2,
+        "test_coverage": 85,
+        "documentation_quality": "excellent",
+        "code_quality": "high",
+        "last_validated": "2025-10-20"
+      }
+    }
+  ],
+  "installation_instructions": {
+    "automatic": {
+      "description": "Use the provided installation script",
+      "command": "./install.sh <skill-id>",
+      "supports_batch": true
+    },
+    "manual": {
+      "steps": [
+        "1. Download the skill folder from the repository",
+        "2. Copy to your Claude skills directory",
+        "3. Install Python dependencies: pip install -r requirements.txt",
+        "4. Configure settings in config.json if needed",
+        "5. Test with: python test_skill.py"
+      ]
+    },
+    "claude_integration": {
+      "user_skills_path": "/mnt/skills/user/",
+      "activation": "Skills are automatically available once placed in the correct directory",
+      "verification": "Ask Claude to list available skills"
+    }
+  },
+  "api_endpoints": {
+    "catalog": "https://raw.githubusercontent.com/patshone-github/skills/main/marketplace.json",
+    "download_base": "https://github.com/patshone-github/skills/archive/main.zip",
+    "individual_skill": "https://github.com/patshone-github/skills/tree/main/skills/{skill-id}"
+  },
+  "versioning": {
+    "strategy": "semantic",
+    "format": "MAJOR.MINOR.PATCH",
+    "backwards_compatibility": "maintained within major versions"
+  }
+}

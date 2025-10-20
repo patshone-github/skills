@@ -1,0 +1,149 @@
+{
+    "skill_name": "M&A Tracker - Consulting & Tech Services",
+    "version": "1.0.0",
+    "author": "MA Intelligence System",
+    "description": "Track and analyze M&A activity in consulting and technology services",
+    
+    "deal_filters": {
+        "turnover_range_millions": {
+            "min": 5,
+            "max": 50
+        },
+        "include_undisclosed": true,
+        "days_lookback": 7,
+        "sectors": [
+            "Consulting",
+            "IT Services",
+            "Digital Transformation",
+            "Cloud & Infrastructure",
+            "Cybersecurity",
+            "Data & Analytics",
+            "AI & Automation"
+        ],
+        "excluded_keywords": [
+            "rumor",
+            "speculation",
+            "considering",
+            "may acquire"
+        ]
+    },
+    
+    "data_sources": {
+        "rss_feeds": "data/rss_feeds.opml",
+        "web_search": {
+            "enabled": true,
+            "queries": [
+                "consulting firm acquisition {year}",
+                "technology services M&A {month}",
+                "private equity consulting buyout"
+            ]
+        },
+        "refresh_interval_hours": 24
+    },
+    
+    "buyer_classification": {
+        "private_equity_indicators": [
+            "private equity",
+            "pe firm",
+            "pe-backed",
+            "portfolio company",
+            "fund",
+            "partners",
+            "capital",
+            "investment firm",
+            "holdings"
+        ],
+        "strategic_indicators": [
+            "strategic",
+            "corporate",
+            "merger",
+            "synergies",
+            "integration"
+        ]
+    },
+    
+    "technology_keywords": {
+        "primary": [
+            "ai",
+            "artificial intelligence",
+            "machine learning",
+            "cloud",
+            "data",
+            "analytics",
+            "cybersecurity",
+            "automation",
+            "digital transformation"
+        ],
+        "secondary": [
+            "saas",
+            "erp",
+            "crm",
+            "blockchain",
+            "iot",
+            "devops",
+            "agile",
+            "rpa"
+        ]
+    },
+    
+    "geographic_mapping": {
+        "UK": ["uk", "united kingdom", "british", "london", "manchester", "edinburgh"],
+        "US": ["us", "united states", "american", "new york", "silicon valley", "boston"],
+        "Europe": ["europe", "eu", "germany", "france", "netherlands", "nordic", "dach"],
+        "APAC": ["asia", "apac", "singapore", "australia", "india", "japan"],
+        "Global": ["global", "worldwide", "international"]
+    },
+    
+    "alerts": {
+        "enabled": true,
+        "criteria": {
+            "mega_deal_threshold_millions": 100,
+            "competitor_keywords": ["accenture", "deloitte", "pwc", "ey", "kpmg", "capgemini"],
+            "priority_technologies": ["ai", "quantum", "blockchain"],
+            "priority_buyers": ["microsoft", "google", "aws", "salesforce"]
+        },
+        "notification_channels": {
+            "email": {
+                "enabled": false,
+                "recipients": []
+            },
+            "slack": {
+                "enabled": false,
+                "webhook_url": ""
+            },
+            "file": {
+                "enabled": true,
+                "path": "alerts/deal_alerts.txt"
+            }
+        }
+    },
+    
+    "output": {
+        "format": "excel",
+        "filename_pattern": "MA_Tracker_{date}.xlsx",
+        "location": "/mnt/user-data/outputs",
+        "include_charts": true,
+        "sheets": {
+            "deal_tracker": true,
+            "executive_summary": true,
+            "sector_analysis": true,
+            "buyer_analysis": true,
+            "technology_trends": true,
+            "geographic_analysis": true,
+            "monthly_trends": true,
+            "alerts": true
+        }
+    },
+    
+    "analysis": {
+        "calculate_metrics": true,
+        "trend_period_months": 6,
+        "minimum_deals_for_trend": 3,
+        "confidence_scoring": true
+    },
+    
+    "logging": {
+        "level": "INFO",
+        "file": "logs/ma_tracker.log"
+    }
+}

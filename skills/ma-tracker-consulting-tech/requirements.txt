@@ -1,0 +1,39 @@
+# M&A Tracker Skill Dependencies
+# Python 3.8+
+
+# Core data processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Excel generation
+openpyxl>=3.1.0
+xlsxwriter>=3.0.0
+
+# RSS feed parsing
+feedparser>=6.0.0
+
+# Web scraping (optional)
+beautifulsoup4>=4.12.0
+requests>=2.31.0
+lxml>=4.9.0
+
+# Date handling
+python-dateutil>=2.8.0
+
+# Data validation
+pydantic>=2.0.0
+
+# Logging and monitoring
+loguru>=0.7.0
+
+# Configuration management
+python-dotenv>=1.0.0
+
+# Optional: Advanced features
+# selenium>=4.15.0  # For dynamic web scraping
+# scrapy>=2.11.0    # For large-scale scraping
+# newspaper3k>=0.2.8  # For article extraction
+
+# Optional: API integrations
+# slack-sdk>=3.23.0  # For Slack notifications
+# sendgrid>=6.10.0   # For email alerts
