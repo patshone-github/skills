@@ -1,6 +1,7 @@
 ---
 name: ma-tracker-consulting-tech
 description: Track and analyze M&A deals in consulting and tech services (£5-50m), generate weekly Excel reports with sector analysis
+when_to_use: when user asks to track M&A deals, analyze acquisition activity in consulting/tech services, generate M&A reports, or monitor PE/strategic buyer activity in mid-market (£5-50m) tech/consulting sectors
 metadata:
   version: "1.0.0"
   dependencies: "pandas>=2.0.0, openpyxl>=3.1.0, feedparser>=6.0.0, python-dateutil>=2.8.0"
