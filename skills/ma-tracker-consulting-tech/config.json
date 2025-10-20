@@ -40,6 +40,19 @@
         },
         "refresh_interval_hours": 24
     },
+
+    "blocked_feeds": {
+        "feeds_list": [
+            {
+                "name": "UK Tech Exits",
+                "url": "https://uktechexits.news/feed",
+                "reason": "Returns HTTP 403 for automated requests",
+                "workaround": "Use Claude WebFetch tool to retrieve manually"
+            }
+        ],
+        "cache_directory": "/tmp/ma_tracker_feeds",
+        "handling_mode": "skip_with_warning"
+    },
     
     "buyer_classification": {
         "private_equity_indicators": [

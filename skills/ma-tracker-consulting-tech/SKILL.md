@@ -50,7 +50,36 @@ python ma_tracker.py --sector "Cybersecurity"
 python ma_tracker.py --output "weekly_report.xlsx"
 ```
 
-## Configuration
+## Handling Blocked Feeds
+
+Some RSS feeds (like uktechexits.news) block automated HTTP requests with 403 errors. The skill supports two modes for handling these feeds:
+
+### Standalone Mode (Direct Processing)
+For feeds that allow standard requests:
+```bash
+python ma_tracker.py --opml data/rss_feeds.opml
+```
+The tracker will automatically detect blocked feeds and log warnings.
+
+### Skill Mode (Claude-Orchestrated)
+For blocked feeds, Claude uses WebFetch to retrieve content:
+
+1. **Claude fetches the feed** using WebFetch tool:
+   ```
+   WebFetch(url="https://uktechexits.news/feed", prompt="Return raw RSS XML")
+   ```
+
+2. **Save content to temp file**:
+   ```bash
+   python fetch_blocked_feeds.py --feed-name "uktechexits" --content-file /tmp/feed.xml
+   ```
+
+3. **Process with cached feeds**:
+   ```bash
+   python ma_tracker.py --feed-cache-dir /tmp/ma_tracker_feeds
+   ```
+
+### Configuration
 
 The tracker is controlled by `config.json`:
 
@@ -61,6 +90,16 @@ The tracker is controlled by `config.json`:
         "include_undisclosed": true,
         "days_lookback": 7,
         "sectors": ["Consulting", "IT Services", "Digital Transformation"]
+    },
+    "blocked_feeds": {
+        "feeds_list": [
+            {
+                "name": "UK Tech Exits",
+                "url": "https://uktechexits.news/feed",
+                "reason": "Returns HTTP 403 for automated requests"
+            }
+        ],
+        "cache_directory": "/tmp/ma_tracker_feeds"
     }
 }
 ```

@@ -267,13 +267,53 @@ class DealExtractor:
         return score
 
 
+class BlockedFeedHandler:
+    """Handler for RSS feeds that block standard HTTP requests"""
+
+    def __init__(self, config: Dict):
+        self.config = config
+
+    def load_feed_from_file(self, filepath: str):
+        """
+        Load and parse RSS feed content from a file.
+
+        Args:
+            filepath: Path to the cached RSS feed file
+
+        Returns:
+            Parsed feed data or None if file doesn't exist
+        """
+        try:
+            feed_path = Path(filepath)
+            if not feed_path.exists():
+                logger.warning(f"Feed file not found: {filepath}")
+                return None
+
+            # Read the file content and parse it with feedparser
+            with open(feed_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            # Parse the feed content
+            feed = feedparser.parse(content)
+
+            if feed.bozo:
+                logger.warning(f"Feed parsing warning for {filepath}: {feed.get('bozo_exception', 'Unknown error')}")
+
+            return feed
+
+        except Exception as e:
+            logger.error(f"Error loading feed from file {filepath}: {e}")
+            return None
+
+
 class FeedProcessor:
     """Process RSS feeds to extract deals"""
-    
+
     def __init__(self, config: Dict, extractor: DealExtractor):
         self.config = config
         self.extractor = extractor
         self.deals = []
+        self.blocked_handler = BlockedFeedHandler(config)
         
     def process_opml(self, opml_path: str) -> List[Deal]:
         """Process all feeds in OPML file"""
@@ -306,33 +346,86 @@ class FeedProcessor:
             
         return feeds
     
+    def _process_feed_entries(self, feed, feed_title: str):
+        """
+        Process entries from a parsed feed (common logic for URL and file-based feeds).
+
+        Args:
+            feed: Parsed feed object from feedparser
+            feed_title: Title/name of the feed source
+        """
+        lookback_days = self.config['deal_filters']['days_lookback']
+        cutoff_date = datetime.now() - timedelta(days=lookback_days)
+
+        for entry in feed.entries[:20]:  # Limit entries
+            pub_date = self.get_pub_date(entry)
+
+            if pub_date < cutoff_date:
+                continue
+
+            title = entry.get('title', '')
+            description = entry.get('description', '') or entry.get('summary', '')
+
+            deal = self.extractor.extract_deal(
+                title, description, feed_title, pub_date
+            )
+
+            if deal:
+                deal.link = entry.get('link', '')
+                self.deals.append(deal)
+                logger.info(f"Found deal: {deal.buyer} → {deal.target}")
+
     def process_feed(self, feed_info: Dict):
         """Process a single RSS feed"""
         try:
             feed = feedparser.parse(feed_info['url'])
-            lookback_days = self.config['deal_filters']['days_lookback']
-            cutoff_date = datetime.now() - timedelta(days=lookback_days)
-            
-            for entry in feed.entries[:20]:  # Limit entries
-                pub_date = self.get_pub_date(entry)
-                
-                if pub_date < cutoff_date:
-                    continue
-                    
-                title = entry.get('title', '')
-                description = entry.get('description', '') or entry.get('summary', '')
-                
-                deal = self.extractor.extract_deal(
-                    title, description, feed_info['title'], pub_date
-                )
-                
-                if deal:
-                    deal.link = entry.get('link', '')
-                    self.deals.append(deal)
-                    logger.info(f"Found deal: {deal.buyer} → {deal.target}")
-                    
+
+            # Check if feed is blocked (403 or similar HTTP errors)
+            if hasattr(feed, 'status') and feed.status == 403:
+                logger.warning(f"Feed blocked (HTTP 403): {feed_info['title']} - {feed_info['url']}")
+                logger.warning(f"Consider using web_fetch in Claude to retrieve this feed manually")
+                return
+
+            # Check for other feed errors
+            if feed.bozo and hasattr(feed, 'bozo_exception'):
+                error_msg = str(feed.bozo_exception)
+                if 'HTTP Error 403' in error_msg or 'Forbidden' in error_msg:
+                    logger.warning(f"Feed blocked: {feed_info['title']} - {error_msg}")
+                    logger.warning(f"Consider using web_fetch in Claude to retrieve this feed manually")
+                    return
+
+            self._process_feed_entries(feed, feed_info['title'])
+
         except Exception as e:
             logger.error(f"Error processing feed {feed_info['title']}: {e}")
+
+    def process_feed_from_file(self, filepath: str, feed_title: str):
+        """
+        Process a pre-fetched RSS feed from a file.
+
+        This method is used for feeds that block automated requests (HTTP 403).
+        In Claude Code, use the WebFetch tool to retrieve blocked feeds, save them
+        to temp files, then process them with this method.
+
+        Args:
+            filepath: Path to the cached RSS feed file
+            feed_title: Title/name of the feed source
+
+        Returns:
+            None (deals are added to self.deals)
+        """
+        try:
+            # Load feed from file using BlockedFeedHandler
+            feed = self.blocked_handler.load_feed_from_file(filepath)
+
+            if not feed:
+                logger.warning(f"Could not load feed from {filepath}")
+                return
+
+            self._process_feed_entries(feed, feed_title)
+
+        except Exception as e:
+            logger.error(f"Error processing feed from file {filepath}: {e}")
     
     @staticmethod
     def get_pub_date(entry) -> datetime:
@@ -452,7 +545,8 @@ def main():
     parser.add_argument('--days', type=int, help='Days to look back')
     parser.add_argument('--sector', help='Filter by sector')
     parser.add_argument('--disclosed-only', action='store_true', help='Only include deals with disclosed values')
-    
+    parser.add_argument('--feed-cache-dir', help='Directory containing pre-fetched feed files for blocked feeds')
+
     args = parser.parse_args()
     
     # Initialize tracker

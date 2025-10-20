@@ -79,6 +79,56 @@ python validate_spec.py
 python test_skill.py
 ```
 
+## Troubleshooting
+
+### HTTP 403 Errors (Blocked Feeds)
+
+Some RSS feeds block automated requests and return HTTP 403 Forbidden errors. Examples include:
+- uktechexits.news/feed
+- Other feeds with anti-bot protection
+
+**Symptoms:**
+```
+WARNING:ma_tracker:Feed blocked (HTTP 403): UK Tech Exits - https://uktechexits.news/feed
+WARNING:ma_tracker:Consider using web_fetch in Claude to retrieve this feed manually
+```
+
+**Solution:**
+
+When using Claude Code, use the two-mode approach:
+
+1. **Claude fetches blocked feeds** using WebFetch:
+   ```python
+   WebFetch(url="https://uktechexits.news/feed", prompt="Return the raw RSS XML content")
+   ```
+
+2. **Cache the fetched content**:
+   ```bash
+   python fetch_blocked_feeds.py --feed-name "uktechexits" --content-file /tmp/fetched_feed.xml
+   ```
+
+3. **Run tracker with cached feeds**:
+   ```bash
+   python ma_tracker.py --feed-cache-dir /tmp/ma_tracker_feeds
+   ```
+
+**For standalone use:**
+The tracker will automatically skip blocked feeds and log warnings. Check `config.json` → `blocked_feeds` section for the list of known blocked feeds.
+
+### Missing Dependencies
+
+```bash
+# If you see "ModuleNotFoundError"
+pip install -r requirements.txt
+```
+
+### Empty Results
+
+If no deals are found:
+- Check `days_lookback` in config.json (default: 7 days)
+- Verify RSS feeds are accessible
+- Review `deal_filters` settings (deal value ranges, sectors)
+
 ## Version
 
 Current version: 1.0.0
