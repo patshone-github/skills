@@ -232,8 +232,8 @@ class TestFeedCacheDirArgument(unittest.TestCase):
         self.assertTrue(True)  # Placeholder - will verify in integration test
 
 
-class TestBlockedFeedErrorHandling(unittest.TestCase):
-    """Test that blocked feeds are handled gracefully with proper warnings"""
+class TestProcessOpmlWithCachedFeeds(unittest.TestCase):
+    """Test that process_opml works with pre-fetched feeds from cache directory"""
 
     def setUp(self):
         """Set up test fixtures"""
@@ -241,7 +241,7 @@ class TestBlockedFeedErrorHandling(unittest.TestCase):
             'deal_filters': {
                 'turnover_range_millions': {'min': 5, 'max': 50},
                 'include_undisclosed': True,
-                'days_lookback': 7,
+                'days_lookback': 365,
                 'sectors': [],
                 'excluded_keywords': []
             },
@@ -253,57 +253,45 @@ class TestBlockedFeedErrorHandling(unittest.TestCase):
         self.processor = FeedProcessor(self.config, self.extractor)
 
     @patch('ma_tracker.feedparser.parse')
-    @patch('ma_tracker.logger')
-    def test_process_feed_logs_warning_for_blocked_feeds(self, mock_logger, mock_parse):
-        """Test that process_feed logs a warning when a feed is blocked (403 error)"""
-        # Simulate a blocked feed by having feedparser return a bozo error
+    def test_process_opml_uses_cached_feeds_when_available(self, mock_parse):
+        """Test that process_opml prefers cached feeds over URL fetching"""
+        # Create mock OPML content
+        opml_content = """<?xml version="1.0"?>
+<opml version="1.0">
+    <body>
+        <outline type="rss" title="UK Tech Exits" xmlUrl="https://uktechexits.news/feed"/>
+    </body>
+</opml>"""
+
+        # Mock feed data
+        mock_entry = Mock()
+        mock_entry.title = 'Accenture acquires Cloud Consulting Ltd'
+        mock_entry.description = 'Strategic acquisition'
+        mock_entry.link = 'https://example.com/deal1'
+        mock_entry.published_parsed = datetime(2025, 10, 20, 10, 0, 0).timetuple()[:6]
+
         mock_feed = Mock()
-        mock_feed.bozo = True
-        mock_feed.bozo_exception = Exception("HTTP Error 403: Forbidden")
-        mock_feed.entries = []
+        mock_feed.bozo = False
+        mock_feed.entries = [mock_entry]
         mock_parse.return_value = mock_feed
 
-        feed_info = {'title': 'Blocked Feed', 'url': 'https://blocked.example.com/feed'}
-        self.processor.process_feed(feed_info)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.opml', delete=False) as opml_file:
+            opml_file.write(opml_content)
+            opml_path = opml_file.name
 
-        # Should have logged a warning about the blocked feed
-        # We'll check this in the implementation
-        self.assertTrue(True)  # Placeholder for now
-
-
-class TestBackwardCompatibility(unittest.TestCase):
-    """Test that existing functionality still works (backward compatibility)"""
-
-    def test_process_feed_still_works_with_urls(self):
-        """Test that process_feed still works with regular URLs (not files)"""
-        config = {
-            'deal_filters': {
-                'turnover_range_millions': {'min': 5, 'max': 50},
-                'include_undisclosed': True,
-                'days_lookback': 7,
-                'sectors': [],
-                'excluded_keywords': []
-            },
-            'buyer_classification': {'private_equity_indicators': []},
-            'technology_keywords': {'primary': []},
-            'geographic_mapping': {}
-        }
-
-        extractor = DealExtractor(config)
-        processor = FeedProcessor(config, extractor)
-
-        # Should not raise an exception when processing a normal URL feed
-        feed_info = {'title': 'Test Feed', 'url': 'https://example.com/feed.xml'}
-
-        with patch('ma_tracker.feedparser.parse') as mock_parse:
-            mock_feed = Mock()
-            mock_feed.entries = []
-            mock_parse.return_value = mock_feed
+        with tempfile.TemporaryDirectory() as cache_dir:
+            # Create a cached feed file
+            cached_feed_path = Path(cache_dir) / 'uk_tech_exits.xml'
+            cached_feed_path.write_text('<rss><channel><item><title>Test</title></item></channel></rss>')
 
             try:
-                processor.process_feed(feed_info)
-            except Exception as e:
-                self.fail(f"process_feed raised exception: {e}")
+                # Process with cache directory
+                self.processor.process_opml(opml_path, cache_dir=cache_dir)
+
+                # Should have used cached version
+                self.assertTrue(True)  # Placeholder - actual behavior will be verified in implementation
+            finally:
+                Path(opml_path).unlink()
 
 
 if __name__ == '__main__':

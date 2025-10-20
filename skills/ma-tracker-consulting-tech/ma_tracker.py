@@ -315,15 +315,61 @@ class FeedProcessor:
         self.deals = []
         self.blocked_handler = BlockedFeedHandler(config)
         
-    def process_opml(self, opml_path: str) -> List[Deal]:
-        """Process all feeds in OPML file"""
+    def process_opml(self, opml_path: str, cache_dir: str = None) -> List[Deal]:
+        """
+        Process all feeds in OPML file from cached versions.
+
+        Args:
+            opml_path: Path to OPML file containing feed definitions
+            cache_dir: Directory containing pre-fetched feed files.
+                      If None, uses default from config or /tmp/ma_tracker_feeds
+
+        Returns:
+            List of extracted Deal objects
+
+        Note:
+            This method expects feeds to be pre-fetched via Claude's WebFetch tool.
+            Feeds not found in cache will be skipped with a warning.
+        """
         feeds = self.parse_opml(opml_path)
-        
+
+        # Determine cache directory
+        if cache_dir is None:
+            cache_dir = self.config.get('blocked_feeds', {}).get('cache_directory', '/tmp/ma_tracker_feeds')
+
+        cache_path = Path(cache_dir)
+        if not cache_path.exists():
+            logger.warning(f"Cache directory not found: {cache_dir}")
+            logger.warning("No feeds will be processed. Use WebFetch to retrieve feeds first.")
+            return self.deals
+
         for feed_info in feeds:
             logger.info(f"Processing: {feed_info['title']}")
-            self.process_feed(feed_info)
-            
+
+            # Look for cached version of this feed
+            safe_name = self._sanitize_feed_name(feed_info['title'])
+            # Look for any file matching the feed name pattern
+            cached_files = list(cache_path.glob(f"{safe_name}*.xml"))
+
+            if cached_files:
+                # Use the most recent cached file
+                latest_cached = max(cached_files, key=lambda p: p.stat().st_mtime)
+                logger.info(f"Using cached feed: {latest_cached.name}")
+                self.process_feed_from_file(str(latest_cached), feed_info['title'])
+            else:
+                logger.warning(f"No cached version found for '{feed_info['title']}'")
+                logger.warning(f"Expected file pattern: {cache_dir}/{safe_name}*.xml")
+                logger.warning("Use Claude's WebFetch tool to retrieve this feed")
+
         return self.deals
+
+    @staticmethod
+    def _sanitize_feed_name(name: str) -> str:
+        """Convert feed title to safe filename"""
+        # Remove special characters and convert to lowercase
+        safe = "".join(c for c in name if c.isalnum() or c in ('-', '_', ' '))
+        safe = safe.replace(' ', '_').lower()
+        return safe
     
     def parse_opml(self, opml_path: str) -> List[Dict]:
         """Parse OPML file to extract feed URLs"""
@@ -375,37 +421,12 @@ class FeedProcessor:
                 self.deals.append(deal)
                 logger.info(f"Found deal: {deal.buyer} → {deal.target}")
 
-    def process_feed(self, feed_info: Dict):
-        """Process a single RSS feed"""
-        try:
-            feed = feedparser.parse(feed_info['url'])
-
-            # Check if feed is blocked (403 or similar HTTP errors)
-            if hasattr(feed, 'status') and feed.status == 403:
-                logger.warning(f"Feed blocked (HTTP 403): {feed_info['title']} - {feed_info['url']}")
-                logger.warning(f"Consider using web_fetch in Claude to retrieve this feed manually")
-                return
-
-            # Check for other feed errors
-            if feed.bozo and hasattr(feed, 'bozo_exception'):
-                error_msg = str(feed.bozo_exception)
-                if 'HTTP Error 403' in error_msg or 'Forbidden' in error_msg:
-                    logger.warning(f"Feed blocked: {feed_info['title']} - {error_msg}")
-                    logger.warning(f"Consider using web_fetch in Claude to retrieve this feed manually")
-                    return
-
-            self._process_feed_entries(feed, feed_info['title'])
-
-        except Exception as e:
-            logger.error(f"Error processing feed {feed_info['title']}: {e}")
-
     def process_feed_from_file(self, filepath: str, feed_title: str):
         """
         Process a pre-fetched RSS feed from a file.
 
-        This method is used for feeds that block automated requests (HTTP 403).
-        In Claude Code, use the WebFetch tool to retrieve blocked feeds, save them
-        to temp files, then process them with this method.
+        This is the primary method for processing feeds. All feeds should be
+        pre-fetched using Claude's WebFetch tool and saved to files before processing.
 
         Args:
             filepath: Path to the cached RSS feed file

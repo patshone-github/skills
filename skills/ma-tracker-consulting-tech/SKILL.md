@@ -50,34 +50,28 @@ python ma_tracker.py --sector "Cybersecurity"
 python ma_tracker.py --output "weekly_report.xlsx"
 ```
 
-## Handling Blocked Feeds
+## How This Skill Works
 
-Some RSS feeds (like uktechexits.news) block automated HTTP requests with 403 errors. The skill supports two modes for handling these feeds:
+This skill uses a **web_fetch-first architecture**. ALL RSS feeds must be retrieved using Claude's WebFetch tool before processing. This approach avoids HTTP 403 errors and other blocking mechanisms used by RSS providers.
 
-### Standalone Mode (Direct Processing)
-For feeds that allow standard requests:
-```bash
-python ma_tracker.py --opml data/rss_feeds.opml
-```
-The tracker will automatically detect blocked feeds and log warnings.
+### Workflow
 
-### Skill Mode (Claude-Orchestrated)
-For blocked feeds, Claude uses WebFetch to retrieve content:
-
-1. **Claude fetches the feed** using WebFetch tool:
+1. **Claude fetches feeds** using WebFetch tool for each feed in the OPML file:
    ```
-   WebFetch(url="https://uktechexits.news/feed", prompt="Return raw RSS XML")
+   WebFetch(url="https://uktechexits.news/feed", prompt="Return raw RSS XML content")
    ```
 
-2. **Save content to temp file**:
+2. **Cache the fetched content**:
    ```bash
    python fetch_blocked_feeds.py --feed-name "uktechexits" --content-file /tmp/feed.xml
    ```
 
-3. **Process with cached feeds**:
+3. **Process all cached feeds**:
    ```bash
-   python ma_tracker.py --feed-cache-dir /tmp/ma_tracker_feeds
+   python ma_tracker.py --opml data/rss_feeds.opml
    ```
+
+The tracker automatically looks for cached versions of each feed listed in the OPML file. Feeds not found in the cache are skipped with a warning.
 
 ### Configuration
 
@@ -92,17 +86,12 @@ The tracker is controlled by `config.json`:
         "sectors": ["Consulting", "IT Services", "Digital Transformation"]
     },
     "blocked_feeds": {
-        "feeds_list": [
-            {
-                "name": "UK Tech Exits",
-                "url": "https://uktechexits.news/feed",
-                "reason": "Returns HTTP 403 for automated requests"
-            }
-        ],
         "cache_directory": "/tmp/ma_tracker_feeds"
     }
 }
 ```
+
+**Note:** The `cache_directory` setting determines where the tracker looks for pre-fetched feed files.
 
 ## Data Sources
 

@@ -15,8 +15,25 @@ An automated M&A (Mergers & Acquisitions) tracking system that monitors consulti
 
 ## Quick Start
 
+**Important:** This tool uses a web_fetch-first architecture. All RSS feeds must be pre-fetched using Claude's WebFetch tool before running the tracker.
+
+### Step 1: Fetch Feeds with Claude
+
+Claude fetches each feed using WebFetch:
+```python
+WebFetch(url="https://feed-url.com/rss", prompt="Return raw RSS XML content")
+```
+
+### Step 2: Cache the Feeds
+
 ```bash
-# Basic usage (last 7 days)
+python fetch_blocked_feeds.py --feed-name "feed_name" --content-file /tmp/fetched_feed.xml
+```
+
+### Step 3: Run the Tracker
+
+```bash
+# Basic usage (processes all cached feeds from last 7 days)
 python ma_tracker.py
 
 # Custom lookback period
@@ -81,23 +98,20 @@ python test_skill.py
 
 ## Troubleshooting
 
-### HTTP 403 Errors (Blocked Feeds)
-
-Some RSS feeds block automated requests and return HTTP 403 Forbidden errors. Examples include:
-- uktechexits.news/feed
-- Other feeds with anti-bot protection
+### Missing Cached Feeds
 
 **Symptoms:**
 ```
-WARNING:ma_tracker:Feed blocked (HTTP 403): UK Tech Exits - https://uktechexits.news/feed
-WARNING:ma_tracker:Consider using web_fetch in Claude to retrieve this feed manually
+WARNING:ma_tracker:No cached version found for 'UK Tech Exits'
+WARNING:ma_tracker:Expected file pattern: /tmp/ma_tracker_feeds/uk_tech_exits*.xml
+WARNING:ma_tracker:Use Claude's WebFetch tool to retrieve this feed
 ```
 
 **Solution:**
 
-When using Claude Code, use the two-mode approach:
+The tracker requires ALL feeds to be pre-fetched using Claude's WebFetch tool:
 
-1. **Claude fetches blocked feeds** using WebFetch:
+1. **Claude fetches the feed** using WebFetch:
    ```python
    WebFetch(url="https://uktechexits.news/feed", prompt="Return the raw RSS XML content")
    ```
@@ -107,13 +121,12 @@ When using Claude Code, use the two-mode approach:
    python fetch_blocked_feeds.py --feed-name "uktechexits" --content-file /tmp/fetched_feed.xml
    ```
 
-3. **Run tracker with cached feeds**:
+3. **Run tracker**:
    ```bash
-   python ma_tracker.py --feed-cache-dir /tmp/ma_tracker_feeds
+   python ma_tracker.py
    ```
 
-**For standalone use:**
-The tracker will automatically skip blocked feeds and log warnings. Check `config.json` → `blocked_feeds` section for the list of known blocked feeds.
+The tracker automatically finds cached feeds matching each feed title in the OPML file.
 
 ### Missing Dependencies
 
